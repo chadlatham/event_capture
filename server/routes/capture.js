@@ -8,11 +8,11 @@ const router = express.Router(); // eslint-disable-line new-cap
 const val = require('../validations/capture');
 
 router.post('/capture', ev(val.post), (req, res, next) => {
-  res.send('post');
+  res.send(req.body);
 });
 
 router.get('/capture', (req, res, next) => {
-  res.send('get');
+  res.send({ method: 'get' });
 });
 
 module.exports = router;
