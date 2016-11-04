@@ -1,8 +1,9 @@
 {
   "name": "express_mongo",
   "version": "0.1.0",
-  "description": "",
+  "description": "Basic Express server with MongoDB backing store",
   "main": "index.js",
+  "repository": ""
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,6 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.14.0",
-    "knex": "^0.12.6"
+    "knex": "^0.12.6",
+    "mongodb": "^2.2.11"
   }
 }
