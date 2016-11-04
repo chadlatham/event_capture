@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Basic Express server with MongoDB backing store",
   "main": "index.js",
-  "repository": ""
+  "repository": "https://github.com/chadlatham/express_mongo",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,7 +12,6 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.14.0",
-    "knex": "^0.12.6",
     "mongodb": "^2.2.11"
   }
 }
