@@ -15,7 +15,7 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 
 // Require Client Routes
-// const auth = require('./routes/auth');
+const capture = require('./routes/capture');
 
 // Instantiate Express
 const app = express();
@@ -37,23 +37,9 @@ switch (app.get('env')) {
 }
 
 app.use(bodyParser.json());
-app.use(cookieParser());
 
-if (isDeveloping) {
-  // Serve the transpiled static files from memory
-  app.use(webpackDevMiddleware(compiler, {
-    publicPath: config.output.publicPath,
-    stats: { colors: true }
-  }));
-
-  app.use(webpackHotMiddleware(compiler, {
-    log: console.log // eslint-disable-line
-  }));
-}
-else {
-  // Serve the static resources (compiled in dist on deploy)
-  app.use(express.static(path.join(__dirname, 'dist')));
-}
+// Serve the static resources (compiled in dist on deploy)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // CSRF protection (only JSON Accept headers to API routes)
 app.use('/api', (req, res, next) => {
@@ -65,29 +51,7 @@ app.use('/api', (req, res, next) => {
 });
 
 // Use Client Routes
-app.use('/api', auth);
-app.use('/api', users);
-app.use('/api', geocode);
-app.use('/api', facilities);
-app.use('/api', adventures);
-
-// Page not found handler (for push-state serving of SPA)
-if (isDeveloping) {
-  app.use((_req, res) => {
-    axios.get('http://localhost:3000/index.html')
-      .then((response) => {
-        res.send(response.data);
-      })
-      .catch((err) => {
-        throw err;
-      });
-  });
-}
-else {
-  app.use((_req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  });
-}
+app.use('/api', capture);
 
 // Global error handler
 // eslint-disable-next-line max-params
@@ -113,7 +77,7 @@ app.use((err, _req, res, _next) => {
   res.sendStatus(500);
 });
 
-module.exports = app.listen(port, () => {
+app.listen(port, () => {
   if (process.env.NODE_ENV !== 'test') {
     // eslint-disable-next-line no-console
     console.log('Listening on port', port);
