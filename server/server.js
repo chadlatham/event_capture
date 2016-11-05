@@ -50,8 +50,13 @@ app.use('/api', (req, res, next) => {
   res.sendStatus(406);
 });
 
-// Use Client Routes
+// Client routes
 app.use('/api', capture);
+
+// Global not found route
+app.use((_req, res) => {
+  res.sendStatus(404);
+});
 
 // Global error handler
 // eslint-disable-next-line max-params
