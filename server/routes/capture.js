@@ -32,21 +32,21 @@ router.get('/capture', co.wrap(function* (req, res, next) {
     yield col.deleteMany();
 
     // Insert a single document
-    const ret = yield col.insertMany([{ a: 1 }, { a: 1 }, { a: 1 }]);
+    const ret = yield col.insertMany([{ a: 1, b: 1, age: 10 }, { a: 1, c: 1, age: 20 }, { a: 1, d: 1, age: 1 }]);
 
     assert.equal(3, ret.insertedCount);
 
     // Manual iteration using ES6 generators !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // Get the cursor
-    const cursor = col.find({ a: 1 }).limit(3);
-
-    // Declare results array
-    const docs = [];
-
-    // Iterate over the cursor and fill an array
-    while (yield cursor.hasNext()) {
-      docs.push(yield cursor.next());
-    }
+    // const cursor = col.find({ a: 1 }).limit(3);
+    //
+    // // Declare results array
+    // const docs = [];
+    //
+    // // Iterate over the cursor and fill an array
+    // while (yield cursor.hasNext()) {
+    //   docs.push(yield cursor.next());
+    // }
 
     // Using toArray() to iterate the cursor !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // Get first two documents that match the query
@@ -57,8 +57,15 @@ router.get('/capture', co.wrap(function* (req, res, next) {
     // Get all documents
     // const docs = yield col.find().toArray();
 
+    // Get all docs that match the query
+    // const docs = yield col.find({ a: 1 }).toArray();
+
+    // Get all docs that match, skip, limit, and sorted by age
+    const docs = yield col.find({ a: 1 }).limit(2).skip(0).sort({ age: 1 }).toArray();
+
     // Close the connection
     db.close();
+
     res.send(docs);
   }
   catch (err) {
