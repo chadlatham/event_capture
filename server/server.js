@@ -39,7 +39,7 @@ switch (app.get('env')) {
 app.use(bodyParser.json());
 
 // Serve the static resources (compiled in dist on deploy)
-app.use(express.static(path.join(__dirname, 'dist')));
+// app.use(express.static(path.join(__dirname, 'dist')));
 
 // CSRF protection (only JSON Accept headers to API routes)
 app.use('/api', (req, res, next) => {
