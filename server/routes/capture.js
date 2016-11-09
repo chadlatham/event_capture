@@ -4,6 +4,22 @@
 // const { camelizeKeys, decamelizeKeys } = require('humps');
 // const boom = require('boom');
 
+const environment = process.env.NODE_ENV || 'development';
+
+const dbURLs = {
+  development: {
+    connection: 'mongodb://localhost/capture_dev'
+  },
+
+  test: {
+    connection: 'mongodb://localhost/capture_test'
+  },
+
+  production: {
+    connection: process.env.DATABASE_URL
+  }
+};
+
 // Validation
 const ev = require('express-validation');
 const val = require('../validations/capture');
@@ -15,7 +31,7 @@ const router = express.Router(); // eslint-disable-line new-cap
 // Mongo
 const mongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
-const dbURL = 'mongodb://localhost/myproject';
+const dbURL = dbURLs[environment].connection;
 
 // Generator support
 const co = require('co');

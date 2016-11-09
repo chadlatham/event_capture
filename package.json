@@ -5,8 +5,10 @@
   "main": "index.js",
   "repository": "https://github.com/chadlatham/express_mongo",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon ./server/server.js"
+    "foreman": "foreman",
+    "nf": "nf start",
+    "start": "nodemon ./server/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Chad Latham <chadlatham33@gmail.com>",
@@ -25,6 +27,10 @@
     "dotenv": "^2.0.0",
     "eslint": "^3.9.1",
     "eslint-config-ryansobol": "^9.1.1",
+    "foreman": "^2.0.0",
     "nodemon": "^1.11.0"
+  },
+  "engines": {
+    "node": "7.0.0"
   }
 }
