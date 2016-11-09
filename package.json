@@ -2,7 +2,7 @@
   "name": "express_mongo",
   "version": "0.1.0",
   "description": "Basic Express server with MongoDB backing store",
-  "main": "index.js",
+  "main": "./server/server.js",
   "repository": "https://github.com/chadlatham/express_mongo",
   "scripts": {
     "foreman": "foreman",
