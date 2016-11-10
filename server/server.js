@@ -7,7 +7,6 @@ if (isDeveloping) {
 }
 
 const express = require('express');
-// const path = require('path');
 const port = isDeveloping ? 8000 : process.env.PORT;
 
 // Require Middleware
@@ -38,9 +37,6 @@ switch (app.get('env')) {
 
 app.use(bodyParser.json());
 
-// Serve the static resources (compiled in dist on deploy)
-// app.use(express.static(path.join(__dirname, 'dist')));
-
 // CSRF protection (only JSON Accept headers to API routes)
 app.use('/api', (req, res, next) => {
   if (/json/.test(req.get('Accept'))) {
@@ -61,16 +57,16 @@ app.use((_req, res) => {
 // Global error handler
 // eslint-disable-next-line max-params
 app.use((err, _req, res, _next) => {
+  // Joi validation errors
   if (err.status) {
-    // Joi validation errors
     return res
       .status(err.status)
       .set('Content-Type', 'application/json')
       .send(err);
   }
 
+  // Boom errors
   if (err.output && err.output.statusCode) {
-    // Boom errors
     return res
       .status(err.output.statusCode)
       .set('Content-Type', 'text/plain')
