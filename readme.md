@@ -2,7 +2,7 @@
 
 npm i -S mongodb
 create a folder called mongo in project
-mongod --dbpath=/mongo --port 27017
+mongod --dbpath=./mongo --port 27017
 
 #Migo
 iOS apps
