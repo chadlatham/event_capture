@@ -23,7 +23,7 @@ const ObjectID = require('mongodb').ObjectID;
 // Mixpanel
 const token = process.env.MIX_PROJECT_TOKEN;
 const secret = process.env.MIX_API_SECRET;
-const mixUrl = 'http://api.mixpanel.com/track/?';
+const mixUrl = 'https://api.mixpanel.com/track/?';
 
 router.get('/capture', co.wrap(function* (req, res, next) {
   try {
