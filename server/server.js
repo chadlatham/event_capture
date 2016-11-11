@@ -3,7 +3,7 @@
 const isDeveloping = process.env.NODE_ENV !== 'production';
 
 if (isDeveloping) {
-  require('dotenv').config({ silent: true });
+  require('dotenv').config({ silent: true, path: 'server/.env' });
 }
 
 const express = require('express');

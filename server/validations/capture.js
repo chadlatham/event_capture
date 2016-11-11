@@ -7,33 +7,33 @@ module.exports.post = {
     allowUnknownBody: false
   },
   body: {
-    input: Joi.string()
-      .label('Input')
-      .trim()
-      .required()
+    event: Joi.object({
+      type: Joi.string().required(),
+      statusCode: Joi.number().required()
+    }).required()
   }
 };
 
-module.exports.patch = {
-  options: {
-    allowUnknownBody: false
-  },
-  body: {
-    input: Joi.string()
-      .label('Input')
-      .trim()
-      .optional()
-  }
-};
+// module.exports.patch = {
+//   options: {
+//     allowUnknownBody: false
+//   },
+//   body: {
+//     event: Joi.object({
+//       _id: Joi.string().required(),
+//       type: Joi.string().optional(),
+//       statusCode: Joi.number().optional()
+//     }).required()
+//   }
+// };
 
-module.exports.delete = {
-  options: {
-    allowUnknownBody: false
-  },
-  body: {
-    input: Joi.string()
-      .label('Input')
-      .trim()
-      .optional()
-  }
-};
+// module.exports.delete = {
+//   options: {
+//     allowUnknownParams: false
+//   },
+//   body: {
+//     event: Joi.object({
+//       _id: Joi.string().required()
+//     }).required()
+//   }
+// };

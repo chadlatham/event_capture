@@ -2,7 +2,9 @@
 
 // Utilities
 // const { camelizeKeys, decamelizeKeys } = require('humps');
-// const boom = require('boom');
+const boom = require('boom'); // Custom error messages
+const co = require('co'); // Generator based async flow control
+const axios = require('axios'); // Promise based http library
 
 // Validation
 const ev = require('express-validation');
@@ -16,9 +18,12 @@ const router = express.Router(); // eslint-disable-line new-cap
 const mongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 const dbURL = require('../mongoConnection');
+const ObjectID = require('mongodb').ObjectID;
 
-// Generator support
-const co = require('co');
+// Mixpanel
+const token = process.env.MIX_PROJECT_TOKEN;
+const secret = process.env.MIX_API_SECRET;
+const mixUrl = 'http://api.mixpanel.com/track/?';
 
 router.get('/capture', co.wrap(function* (req, res, next) {
   try {
@@ -26,42 +31,8 @@ router.get('/capture', co.wrap(function* (req, res, next) {
     const db = yield mongoClient.connect(dbURL);
 
     // Get the collection
-    const col = db.collection('find');
-
-    // Delete all existing documents
-    yield col.deleteMany();
-
-    // Insert a single document
-    const ret = yield col.insertMany([{ a: 1, b: 1, age: 10 }, { a: 1, c: 1, age: 20 }, { a: 1, d: 1, age: 1 }]);
-
-    assert.equal(3, ret.insertedCount);
-
-    // Manual iteration using ES6 generators !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // Get the cursor
-    // const cursor = col.find({ a: 1 }).limit(3);
-    //
-    // // Declare results array
-    // const docs = [];
-    //
-    // // Iterate over the cursor and fill an array
-    // while (yield cursor.hasNext()) {
-    //   docs.push(yield cursor.next());
-    // }
-
-    // Using toArray() to iterate the cursor !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // Get first two documents that match the query
-    // const docs = yield col.find({ a: 1 }).limit(2).toArray();
-
-    // assert.equal(2, docs.length);
-
-    // Get all documents
-    // const docs = yield col.find().toArray();
-
-    // Get all docs that match the query
-    // const docs = yield col.find({ a: 1 }).toArray();
-
-    // Get all docs that match, skip, limit, and sorted by age
-    const docs = yield col.find({ a: 1 }).limit(2).skip(0).sort({ age: 1 }).toArray();
+    const col = db.collection('events');
+    const docs = yield col.find().toArray();
 
     // Close the connection
     db.close();
@@ -73,108 +44,73 @@ router.get('/capture', co.wrap(function* (req, res, next) {
   }
 }));
 
-router.post('/capture', ev(val.post), co.wrap(function* (req, res, next) {
+router.get('/capture/:_id', co.wrap(function* (req, res, next) {
   try {
-    // Connect to the db
+    const _id = ObjectID.createFromHexString(req.params._id);
+
+    // Connect to mongo
+    const db = yield mongoClient.connect(dbURL);
+
+    // Get the collection
+    const col = db.collection('events');
+    const doc = yield col.findOne({ _id });
+
+    if (!doc) {
+      throw boom.notFound();
+    }
+
+    // Close the connection
+    db.close();
+
+    res.send(doc);
+  }
+  catch (err) {
+    next(err);
+  }
+}));
+
+router.post('/capture', ev(val.post), co.wrap(function* (req, res, next) {
+  const { event } = req.body;
+
+  try {
+    // Connect to Mongo
     const db = yield mongoClient.connect(dbURL);
 
     // Insert a single document
-    const r1 = yield db.collection('inserts').insertOne({ a: 1 });
+    const result = yield db.collection('events').insertOne(event);
 
-    assert.equal(1, r1.insertedCount);
+    assert.equal(1, result.insertedCount);
 
-    // Insert multiple documents
-    const r2 = yield db.collection('inserts').insertMany([{ a: 2 }, { a: 3 }]);
-
-    assert.equal(2, r2.insertedCount);
-
-    // Close connection
+    // Disconnect from Mongo
     db.close();
-    res.send('3 documents written to mongo');
-  }
-  catch (err) {
-    next(err);
-  }
-}));
 
-// eslint-disable-next-line
-router.patch('/capture', ev(val.patch), co.wrap(function* (req, res, next) {
-  try {
-    let result;
+    // Build Mixpanel event tracking object
+    let mixData = {
+      event: event.type,
+      properties: {
+        token,
+        statusCode: event.statusCode
+      }
+    };
 
-    // Connect to mongo
-    const db = yield mongoClient.connect(dbURL);
+    // Convert to JSON
+    mixData = JSON.stringify(mixData);
 
-    // Delete an existing collection
-    result = yield db.listCollections({ name: 'updates' }).toArray();
-    if (result.length) {
-      yield db.dropCollection('updates');
+    // Encode to Base64
+    mixData = new Buffer(mixData).toString('base64');
+
+    // Decode from Base64 to JSON if needed later
+    // const json = new Buffer('Base64 encoded json', 'base64').toString();
+
+    // Send event data to Mixpanel
+    const mixResult = yield axios.get(`${mixUrl}data=${mixData}&verbose=1`);
+
+    // Throw 417 error if Mixpanel API responds with an error
+    if (mixResult.data.error) {
+      throw boom.expectationFailed(mixResult.data.error);
     }
 
-    // Get the updates collection
-    const col = db.collection('updates');
-
-    // Insert three documents
-    result = yield col.insertMany([{ a: 1 }, { a: 2 }, { a: 2 }]);
-    assert.equal(3, result.insertedCount);
-
-    // Update a single document
-    // eslint-disable-next-line
-    result = yield col.updateOne({ a: 1 }, { $set: { b: 1 }});
-    assert.equal(1, result.matchedCount);
-    assert.equal(1, result.modifiedCount);
-
-    // Update multiple documents
-    // eslint-disable-next-line
-    result = yield col.updateMany({ a: 2 }, { $set: { b: 1 }});
-    assert.equal(2, result.matchedCount);
-    assert.equal(2, result.modifiedCount);
-
-    // Upsert a single document
-    // eslint-disable-next-line
-    result = yield col.updateOne({ a: 3 }, { $set: { b: 1 }}, { upsert: true });
-    assert.equal(1, result.matchedCount);
-    assert.equal(0, result.modifiedCount);
-    assert.equal(1, result.upsertedCount);
-    db.close();
-    res.send('patched successfully');
-  }
-  catch (err) {
-    next(err);
-  }
-}));
-
-router.delete('/capture', ev(val.delete), co.wrap(function* (req, res, next) {
-  let ret;
-
-  try {
-    // Connect to mongo
-    const db = yield mongoClient.connect(dbURL);
-
-    // Get the removes collection
-    const col = db.collection('removes');
-
-    // Delete all existing documents in the collection
-    yield col.deleteMany();
-
-    // Insert three documents
-    ret = yield col.insertMany([{ a: 1 }, { a: 2 }, { a: 2 }]);
-    assert.equal(3, ret.insertedCount);
-
-    // Remove a single document
-    ret = yield col.deleteOne({ a: 1 });
-    assert.equal(1, ret.deletedCount);
-
-    // Remove multiple documents
-    ret = yield col.deleteMany({ a: 2 });
-    assert.equal(2, ret.deletedCount);
-
-    // Count all documents in the collection
-    const count = yield col.count();
-
-    // Close the mongo connection
-    db.close();
-    res.send(`delete successful - current collection count: ${count}`);
+    res.send(result.ops[0]);
   }
   catch (err) {
     next(err);
