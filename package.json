@@ -21,7 +21,6 @@
     "co": "^4.6.0",
     "express": "^4.14.0",
     "express-validation": "^1.0.1",
-    "humps": "^2.0.0",
     "joi": "^9.2.0",
     "mixpanel": "^0.5.0",
     "mongodb": "^2.2.11",
