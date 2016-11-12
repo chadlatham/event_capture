@@ -86,7 +86,6 @@ router.get('/capture/:id', co.wrap(function* (req, res, next) {
   }
 }));
 
-// eslint-disable-next-line
 router.post('/capture', ev(val.post), co.wrap(function* (req, res, next) {
   try {
     // Create the event
@@ -99,39 +98,38 @@ router.post('/capture', ev(val.post), co.wrap(function* (req, res, next) {
     const db = mongoose.connection;
 
     try {
-      // const result = yield migoEvent.save();
+      const result = yield migoEvent.save();
 
       assert.equal(result.event, migoEvent.event);
 
-      console.log(migoEvent)
       // Build Mixpanel event tracking object
-      // let mixData = {
-      //   event: migoEvent.event,
-      //   properties: {
-      //     token,
-      //     statusCode: event.statusCode
-      //   }
-      // };
-      //
-      // // Convert to JSON
-      // mixData = JSON.stringify(mixData);
-      //
-      // // Encode to Base64
-      // mixData = new Buffer(mixData).toString('base64');
-      //
-      // // Decode from Base64 to JSON if needed later
-      // // const json = new Buffer('Base64 encoded json', 'base64').toString();
-      //
-      // // Send event data to Mixpanel
-      // const mixResult = yield axios.get(`${mixUrl}data=${mixData}&verbose=1`);
-      //
-      // // Throw 417 error if Mixpanel API responds with an error
-      // if (mixResult.data.error) {
-      //   throw boom.expectationFailed(mixResult.data.error);
-      // }
+      let mix = {
+        event: migoEvent.event,
+        properties: {
+          token
+        }
+      };
 
-      // res.send(result);
-      res.send('success');
+      // Combine the properties of the event to the mixData.properties object
+      if (result.properties) {
+        mix.properties = Object.assign({}, result.properties, mix.properties);
+      }
+
+      // Convert to JSON
+      mix = JSON.stringify(mix);
+
+      // Encode to Base64
+      mix = new Buffer(mix).toString('base64');
+
+      // Send event data to Mixpanel
+      const mixResult = yield axios.get(`${mixUrl}data=${mix}&verbose=1`);
+
+      // Throw 417 error if Mixpanel API responds with an error
+      if (mixResult.data.error) {
+        throw boom.expectationFailed(mixResult.data.error);
+      }
+
+      res.send(result);
     }
     finally {
       db.close();

@@ -6,6 +6,7 @@
   "repository": "https://github.com/chadlatham/express_mongo",
   "scripts": {
     "foreman": "foreman",
+    "lint": "eslint .",
     "nf": "nf start",
     "start": "nodemon ./server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
