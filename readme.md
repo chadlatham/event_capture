@@ -65,3 +65,6 @@ with a property "Referred By"
         "Referred By": "Friend"
     }
 }
+
+##Segment.io
+Don't use for now. Future integration.

@@ -7,9 +7,9 @@ module.exports.post = {
     allowUnknownBody: false
   },
   body: {
-    event: Joi.object({
-      type: Joi.string().required(),
-      statusCode: Joi.number().required()
+    migoEvent: Joi.object({
+      event: Joi.string().required(),
+      properties: Joi.object().optional()
     }).required()
   }
 };
