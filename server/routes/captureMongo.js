@@ -20,13 +20,16 @@ const ObjectID = require('mongodb').ObjectID;
 const token = process.env.MIX_PROJECT_TOKEN;
 const mixUrl = 'https://api.mixpanel.com/track/?';
 
+// Route will ultimately not be necessary in my opinion.
 router.get('/captureMongo', co.wrap(function* (req, res, next) {
-  // Reference the db from server.js
+  // Reference the db connection pool
   const db = req.app.locals.db;
 
   try {
     // Get the collection
     const col = db.collection('events');
+
+    // Get all documents
     const docs = yield col.find().toArray();
 
     res.send(docs);
@@ -37,15 +40,20 @@ router.get('/captureMongo', co.wrap(function* (req, res, next) {
 }));
 
 router.get('/captureMongo/:_id', co.wrap(function* (req, res, next) {
-  // Reference the db from server.js
+  // Reference the db connection pool
   const db = req.app.locals.db;
+
+  // Parse the _id string into a Mongo ObjectID
   const _id = new ObjectID(req.params._id);
 
   try {
     // Get the collection
     const col = db.collection('events');
+
+    // Find the document with _id
     const doc = yield col.findOne({ _id });
 
+    // If no document, then throw error
     if (!doc) {
       throw boom.notFound();
     }
@@ -58,17 +66,20 @@ router.get('/captureMongo/:_id', co.wrap(function* (req, res, next) {
 }));
 
 router.post('/captureMongo', ev(val.post), co.wrap(function* (req, res, next) {
-  // Reference the db from server.js
+  // Reference the db connection pool
   const db = req.app.locals.db;
+
+  // Reference the event from the body
   const { migoEvent } = req.body;
 
   try {
-    // Insert a single document
+    // Insert the event into the Mongo DB
     const result = yield db.collection('events').insertOne(migoEvent);
 
+    // Assert that the event was inserted
     assert.equal(1, result.insertedCount);
 
-    // Pull the recorded event from the result
+    // Reference the recorded event from the result
     const newEvent = result.ops[0];
 
     // Build Mixpanel event tracking object
