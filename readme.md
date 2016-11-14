@@ -68,3 +68,15 @@ with a property "Referred By"
 
 ##Segment.io
 Don't use for now. Future integration.
+
+#Queueing system
+Fire and forget.
+
+Server subscribes to a queue.
+If messages don't meet - ignore or put in failed event handler.
+
+Research client libraries that work with queues.
+
+
+#Knex: Creates a connection pool - we've been doing it wrong it seems.
+##Initializing the library should normally only ever happen once in your application, as it creates a connection pool for the current database, you should use the instance returned from the initialize call throughout your library.

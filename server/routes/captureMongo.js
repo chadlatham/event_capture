@@ -10,109 +10,95 @@ const assert = require('assert'); // Node assertion library
 const ev = require('express-validation');
 const val = require('../validations/capture');
 
-// Express
-const express = require('express');
-const router = express.Router(); // eslint-disable-line new-cap
+// Router
+const router = require('express').Router(); // eslint-disable-line
 
 // Mongo
-const mongoClient = require('mongodb').MongoClient;
-const dbURL = require('../mongoConnection');
 const ObjectID = require('mongodb').ObjectID;
 
 // Mixpanel
 const token = process.env.MIX_PROJECT_TOKEN;
 const mixUrl = 'https://api.mixpanel.com/track/?';
 
-router.get('/capture', co.wrap(function* (req, res, next) {
+router.get('/captureMongo', co.wrap(function* (req, res, next) {
+  // Reference the db from server.js
+  const db = req.app.locals.db;
+
   try {
-    const db = yield mongoClient.connect(dbURL);
+    // Get the collection
+    const col = db.collection('events');
+    const docs = yield col.find().toArray();
 
-    try {
-      // Get the collection
-      const col = db.collection('events');
-      const docs = yield col.find().toArray();
-
-      res.send(docs);
-    }
-    finally {
-      db.close();
-    }
+    res.send(docs);
   }
   catch (err) {
     next(err);
   }
 }));
 
-router.get('/capture/:_id', co.wrap(function* (req, res, next) {
+router.get('/captureMongo/:_id', co.wrap(function* (req, res, next) {
+  // Reference the db from server.js
+  const db = req.app.locals.db;
+  const _id = new ObjectID(req.params._id);
+
   try {
-    const _id = ObjectID.createFromHexString(req.params._id);
+    // Get the collection
+    const col = db.collection('events');
+    const doc = yield col.findOne({ _id });
 
-    const db = yield mongoClient.connect(dbURL);
-
-    try {
-      // Get the collection
-      const col = db.collection('events');
-      const doc = yield col.findOne({ _id });
-
-      if (!doc) {
-        throw boom.notFound();
-      }
-
-      res.send(doc);
+    if (!doc) {
+      throw boom.notFound();
     }
-    finally {
-      db.close();
-    }
+
+    res.send(doc);
   }
   catch (err) {
     next(err);
   }
 }));
 
-router.post('/capture', ev(val.post), co.wrap(function* (req, res, next) {
-  const { event } = req.body;
+router.post('/captureMongo', ev(val.post), co.wrap(function* (req, res, next) {
+  // Reference the db from server.js
+  const db = req.app.locals.db;
+  const { migoEvent } = req.body;
 
   try {
-    // Connect Mongo
-    const db = yield mongoClient.connect(dbURL);
+    // Insert a single document
+    const result = yield db.collection('events').insertOne(migoEvent);
 
-    try {
-      // Insert a single document
-      const result = yield db.collection('events').insertOne(event);
+    assert.equal(1, result.insertedCount);
 
-      assert.equal(1, result.insertedCount);
+    // Pull the recorded event from the result
+    const newEvent = result.ops[0];
 
-      // Build Mixpanel event tracking object
-      let mixData = {
-        event: event.type,
-        properties: {
-          token,
-          statusCode: event.statusCode
-        }
-      };
-
-      // Convert to JSON
-      mixData = JSON.stringify(mixData);
-
-      // Encode to Base64
-      mixData = new Buffer(mixData).toString('base64');
-
-      // Decode from Base64 to JSON if needed later
-      // const json = new Buffer('Base64 encoded json', 'base64').toString();
-
-      // Send event data to Mixpanel
-      const mixResult = yield axios.get(`${mixUrl}data=${mixData}&verbose=1`);
-
-      // Throw 417 error if Mixpanel API responds with an error
-      if (mixResult.data.error) {
-        throw boom.expectationFailed(mixResult.data.error);
+    // Build Mixpanel event tracking object
+    let mix = {
+      event: migoEvent.event,
+      properties: {
+        token
       }
+    };
 
-      res.send(result.ops[0]);
+    // Combine the properties of the event to the mixData.properties object
+    if (newEvent.properties) {
+      mix.properties = Object.assign({}, newEvent.properties, mix.properties);
     }
-    finally {
-      db.close();
+
+    // Convert to JSON
+    mix = JSON.stringify(mix);
+
+    // Encode to Base64
+    mix = new Buffer(mix).toString('base64');
+
+    // Send event data to Mixpanel
+    const mixResult = yield axios.get(`${mixUrl}data=${mix}&verbose=1`);
+
+    // Throw 417 error if Mixpanel API responds with an error
+    if (mixResult.data.error) {
+      throw boom.expectationFailed(mixResult.data.error);
     }
+
+    res.send(newEvent);
   }
   catch (err) {
     next(err);

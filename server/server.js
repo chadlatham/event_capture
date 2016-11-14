@@ -2,27 +2,34 @@
 
 const isDeveloping = process.env.NODE_ENV !== 'production';
 
+// Load environment variables if not production
 if (isDeveloping) {
   require('dotenv').config({ silent: true, path: 'server/.env' });
 }
 
-const express = require('express');
+// Instantiate Express
+const app = require('express')();
+
+// Setup the port
 const port = isDeveloping ? 8000 : process.env.PORT;
+
+// Require Mongo
+const dbURL = require('./mongoConnection');
+const mongoClient = require('mongodb').MongoClient;
 
 // Require Middleware
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 
 // Require Client Routes
-const capture = require('./routes/capture');
-
-// Instantiate Express
-const app = express();
+// const capture = require('./routes/capture');
+const captureMongo = require('./routes/captureMongo');
 
 // Disable server identifying header
 app.disable('x-powered-by');
 
-// Use Middleware
+// *** Use Middleware
+// Setup server logging
 switch (app.get('env')) {
   case 'development':
     app.use(morgan('dev'));
@@ -35,6 +42,7 @@ switch (app.get('env')) {
   default:
 }
 
+// Parse the JSON body of requests
 app.use(bodyParser.json());
 
 // CSRF protection (only JSON Accept headers to API routes)
@@ -47,7 +55,8 @@ app.use('/api', (req, res, next) => {
 });
 
 // Client routes
-app.use('/api', capture);
+// app.use('/api', capture);
+app.use('/api', captureMongo);
 
 // Global not found route
 app.use((_req, res) => {
@@ -78,9 +87,19 @@ app.use((err, _req, res, _next) => {
   res.sendStatus(500);
 });
 
-app.listen(port, () => {
-  if (process.env.NODE_ENV !== 'test') {
-    // eslint-disable-next-line no-console
-    console.log('Listening on port', port);
-  }
-});
+mongoClient.connect(dbURL, { promiseLibrary: Promise })
+  .then((db) => {
+    // Set the db to be available in all routes (req.app.db)
+    app.locals.db = db;
+
+    // Start listening with Express
+    app.listen(port, () => {
+      if (process.env.NODE_ENV !== 'test') {
+        // eslint-disable-next-line no-console
+        console.log('Listening on port', port);
+      }
+    });
+  })
+  .catch((err) => {
+    console.error(err.stack); // eslint-disable-line
+  });
