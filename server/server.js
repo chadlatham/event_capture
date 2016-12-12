@@ -87,9 +87,10 @@ app.use((err, _req, res, _next) => {
   res.sendStatus(500);
 });
 
+// Connect to Mongo and use ES6 Promises
 mongoClient.connect(dbURL, { promiseLibrary: Promise })
   .then((db) => {
-    // Set the db to be available in all routes (req.app.db)
+    // Set the db to be available in all routes (req.app.locals.db)
     app.locals.db = db;
 
     // Start listening with Express
